@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel</title>
+    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@300;400;700&display=swap" rel="stylesheet">
+    <style>
+        body { background: #1c1c1c; color: white; font-family: 'Oswald', sans-serif; padding: 20px; }
+        h1 { border-bottom: 2px solid #007ACC; padding-bottom: 10px; }
+        .entry { background: #333; padding: 15px; margin-bottom: 10px; border-radius: 5px; display: flex; justify-content: space-between; align-items: center; }
+        .entry img { height: 80px; border-radius: 4px; margin-right: 20px; }
+        .info { flex-grow: 1; }
+        .date { color: #888; font-size: 0.9em; }
+        button { background: #d32f2f; color: white; border: none; padding: 8px 15px; cursor: pointer; border-radius: 4px; }
+        button:hover { background: #b71c1c; }
+    </style>
+</head>
+<body>
+    <h1>Admin Panel <button onclick="loadData()" style="float:right; background:#007ACC;">Refresh</button></h1>
+    <div id="container">Loading...</div>
+
+    <script>
+        async function loadData() {
+            const container = document.getElementById('container');
+            try {
+                const res = await fetch('/api/entries');
+                if (res.status === 401) {
+                    container.innerHTML = "Access Denied. Please refresh and enter credentials.";
+                    return;
+                }
+                const entries = await res.json();
+                container.innerHTML = entries.length ? '' : 'No submissions yet.';
+                
+                entries.reverse().forEach(entry => {
+                    const imgHtml = entry.filename ? 
+                        `<a href="/uploads/${entry.filename}" target="_blank"><img src="/uploads/${entry.filename}"></a>` : '';
+                    
+                    container.innerHTML += `
+                        <div class="entry" id="card-${entry.id}">
+                            ${imgHtml}
+                            <div class="info">
+                                <div class="date">${entry.date}</div>
+                                <strong>${entry.comment}</strong>
+                            </div>
+                            <button onclick="deleteEntry(${entry.id})">Delete</button>
+                        </div>
+                    `;
+                });
+            } catch (e) { container.innerHTML = "Error loading data."; }
+        }
+
+        async function deleteEntry(id) {
+            if(!confirm("Delete this entry?")) return;
+            await fetch('/api/entries/' + id, { method: 'DELETE' });
+            loadData();
+        }
+        loadData();
+    </script>
+</body>
+</html>
